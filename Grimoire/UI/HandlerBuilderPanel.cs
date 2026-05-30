@@ -1,33 +1,25 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
-using DarkUI.Forms;
 using Grimoire.Networking.Handlers;
 using Newtonsoft.Json;
 
 namespace Grimoire.UI
 {
-    public partial class HandlerBuilderForm : DarkForm
+    public partial class HandlerBuilderPanel : UserControl
     {
-        private static HandlerBuilderForm _instance;
-
-        public static void ShowSingleton()
-        {
-            if (_instance == null || _instance.IsDisposed)
-                _instance = new HandlerBuilderForm();
-            _instance.Show();
-            _instance.BringToFront();
-        }
-
         public event EventHandler HandlersSaved;
 
         public string LastSavedDisplayName { get; private set; }
 
-        public HandlerBuilderForm()
+        public HandlerBuilderPanel()
         {
             InitializeComponent();
+            HandlerBuilderPlaceholders.ApplyAll(this);
+
             cmbPacketCommand.Items.AddRange(new object[] { "event", "ct" });
             cmbPacketCommand.SelectedIndex = 0;
             cmbTriggerType.Items.AddRange(Enum.GetNames(typeof(HandlerTriggerType)));
@@ -47,21 +39,23 @@ namespace Grimoire.UI
                 lstSavedHandlers.Items.Add(name);
         }
 
-        private void btnNew_Click(object sender, EventArgs e)
+        private void ResetAllFields()
         {
-            txtDisplayName.Clear();
+            foreach (string name in HandlerBuilderPlaceholders.Defaults.Keys)
+            {
+                Control[] found = Controls.Find(name, true);
+                if (found.Length > 0 && found[0] is TextBox textBox)
+                    HandlerBuilderPlaceholders.ClearField(textBox);
+            }
+
             cmbPacketCommand.SelectedIndex = 0;
             cmbTriggerType.SelectedIndex = 0;
             numHandlerDelay.Value = 0;
             lstRules.Items.Clear();
             lstDefaultActions.Items.Clear();
-            txtZoneA_X.Clear();
-            txtZoneA_Y.Clear();
-            txtZoneB_X.Clear();
-            txtZoneB_Y.Clear();
-            txtZoneDefault_X.Clear();
-            txtZoneDefault_Y.Clear();
         }
+
+        private void btnNew_Click(object sender, EventArgs e) => ResetAllFields();
 
         private void btnQuickZoneApply_Click(object sender, EventArgs e)
         {
@@ -69,17 +63,19 @@ namespace Grimoire.UI
             cmbPacketCommand.SelectedItem = "event";
             lstRules.Items.Clear();
 
-            AddZoneWalkRule("A", txtZoneA_X.Text, txtZoneA_Y.Text);
-            AddZoneWalkRule("B", txtZoneB_X.Text, txtZoneB_Y.Text);
+            AddZoneWalkRule("A", HandlerBuilderPlaceholders.GetEffectiveText(txtZoneA_X), HandlerBuilderPlaceholders.GetEffectiveText(txtZoneA_Y));
+            AddZoneWalkRule("B", HandlerBuilderPlaceholders.GetEffectiveText(txtZoneB_X), HandlerBuilderPlaceholders.GetEffectiveText(txtZoneB_Y));
 
             lstDefaultActions.Items.Clear();
-            if (!string.IsNullOrWhiteSpace(txtZoneDefault_X.Text) && !string.IsNullOrWhiteSpace(txtZoneDefault_Y.Text))
+            string defX = HandlerBuilderPlaceholders.GetEffectiveText(txtZoneDefault_X);
+            string defY = HandlerBuilderPlaceholders.GetEffectiveText(txtZoneDefault_Y);
+            if (!string.IsNullOrWhiteSpace(defX) && !string.IsNullOrWhiteSpace(defY))
             {
                 lstDefaultActions.Items.Add(new HandlerScriptAction
                 {
                     Type = HandlerScriptActionType.Walk,
-                    X = txtZoneDefault_X.Text.Trim(),
-                    Y = txtZoneDefault_Y.Text.Trim()
+                    X = defX,
+                    Y = defY
                 });
             }
         }
@@ -97,8 +93,8 @@ namespace Grimoire.UI
                     new HandlerScriptAction
                     {
                         Type = HandlerScriptActionType.Walk,
-                        X = x.Trim(),
-                        Y = y.Trim()
+                        X = x,
+                        Y = y
                     }
                 }
             });
@@ -107,10 +103,12 @@ namespace Grimoire.UI
         private void btnAddRule_Click(object sender, EventArgs e)
         {
             var rule = new HandlerScriptRule();
-            if (!string.IsNullOrWhiteSpace(txtRuleZone.Text))
-                rule.ZoneSet = txtRuleZone.Text.Trim();
-            if (!string.IsNullOrWhiteSpace(txtRuleMessage.Text))
-                rule.MessageContains = txtRuleMessage.Text.Trim();
+            string zone = HandlerBuilderPlaceholders.GetEffectiveText(txtRuleZone);
+            string message = HandlerBuilderPlaceholders.GetEffectiveText(txtRuleMessage);
+            if (!string.IsNullOrWhiteSpace(zone))
+                rule.ZoneSet = zone;
+            if (!string.IsNullOrWhiteSpace(message))
+                rule.MessageContains = message;
 
             if (cmbConditionType.SelectedItem != null &&
                 Enum.TryParse(cmbConditionType.SelectedItem.ToString(), out HandlerScriptConditionType condType) &&
@@ -119,8 +117,8 @@ namespace Grimoire.UI
                 rule.Conditions.Add(new HandlerScriptCondition
                 {
                     Type = condType,
-                    AuraName = txtConditionAura.Text.Trim(),
-                    Value = txtConditionValue.Text.Trim(),
+                    AuraName = HandlerBuilderPlaceholders.GetEffectiveText(txtConditionAura),
+                    Value = HandlerBuilderPlaceholders.GetEffectiveText(txtConditionValue),
                     FriendlyAuras = chkFriendlyAura.Checked
                 });
             }
@@ -130,11 +128,11 @@ namespace Grimoire.UI
                 var action = new HandlerScriptAction { Type = actionType };
                 if (actionType == HandlerScriptActionType.Walk)
                 {
-                    action.X = txtActionX.Text.Trim();
-                    action.Y = txtActionY.Text.Trim();
+                    action.X = HandlerBuilderPlaceholders.GetEffectiveText(txtActionX);
+                    action.Y = HandlerBuilderPlaceholders.GetEffectiveText(txtActionY);
                 }
                 else if (actionType == HandlerScriptActionType.UseSkill || actionType == HandlerScriptActionType.ForceUseSkill)
-                    action.SkillIndex = txtActionSkill.Text.Trim();
+                    action.SkillIndex = HandlerBuilderPlaceholders.GetEffectiveText(txtActionSkill);
                 else if (actionType == HandlerScriptActionType.Delay)
                     action.DelayMs = (int)numActionDelay.Value;
 
@@ -166,11 +164,11 @@ namespace Grimoire.UI
             action = new HandlerScriptAction { Type = actionType };
             if (actionType == HandlerScriptActionType.Walk)
             {
-                action.X = txtActionX.Text.Trim();
-                action.Y = txtActionY.Text.Trim();
+                action.X = HandlerBuilderPlaceholders.GetEffectiveText(txtActionX);
+                action.Y = HandlerBuilderPlaceholders.GetEffectiveText(txtActionY);
             }
             else if (actionType == HandlerScriptActionType.UseSkill || actionType == HandlerScriptActionType.ForceUseSkill)
-                action.SkillIndex = txtActionSkill.Text.Trim();
+                action.SkillIndex = HandlerBuilderPlaceholders.GetEffectiveText(txtActionSkill);
             else if (actionType == HandlerScriptActionType.Delay)
                 action.DelayMs = (int)numActionDelay.Value;
 
@@ -181,17 +179,27 @@ namespace Grimoire.UI
         {
             Enum.TryParse(cmbTriggerType.SelectedItem?.ToString(), out HandlerTriggerType trigger);
 
-            var definition = new HandlerScriptDefinition
+            return new HandlerScriptDefinition
             {
-                DisplayName = txtDisplayName.Text.Trim(),
+                DisplayName = HandlerBuilderPlaceholders.GetEffectiveText(txtDisplayName),
                 PacketCommand = cmbPacketCommand.SelectedItem?.ToString() ?? "event",
                 TriggerType = trigger,
                 DelayMs = (int)numHandlerDelay.Value,
                 Rules = lstRules.Items.Cast<HandlerScriptRule>().ToList(),
                 DefaultActions = lstDefaultActions.Items.Cast<HandlerScriptAction>().ToList()
             };
+        }
 
-            return definition;
+        private void SetTextBoxValue(TextBox textBox, string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                HandlerBuilderPlaceholders.ClearField(textBox);
+                return;
+            }
+
+            textBox.Text = value;
+            textBox.ForeColor = Color.Gainsboro;
         }
 
         private void LoadDefinition(HandlerScriptDefinition definition)
@@ -199,7 +207,7 @@ namespace Grimoire.UI
             if (definition == null)
                 return;
 
-            txtDisplayName.Text = definition.DisplayName;
+            SetTextBoxValue(txtDisplayName, definition.DisplayName);
             cmbPacketCommand.SelectedItem = definition.PacketCommand ?? "event";
             cmbTriggerType.SelectedItem = definition.TriggerType.ToString();
             numHandlerDelay.Value = Math.Max(0, Math.Min((int)numHandlerDelay.Maximum, definition.DelayMs));
@@ -226,14 +234,15 @@ namespace Grimoire.UI
             HandlerScriptAction walkB = zoneB?.Actions?.FirstOrDefault(a => a.Type == HandlerScriptActionType.Walk);
             HandlerScriptAction walkDefault = definition.DefaultActions?.FirstOrDefault(a => a.Type == HandlerScriptActionType.Walk);
 
-            if (walkA != null) { txtZoneA_X.Text = walkA.X; txtZoneA_Y.Text = walkA.Y; }
-            if (walkB != null) { txtZoneB_X.Text = walkB.X; txtZoneB_Y.Text = walkB.Y; }
-            if (walkDefault != null) { txtZoneDefault_X.Text = walkDefault.X; txtZoneDefault_Y.Text = walkDefault.Y; }
+            if (walkA != null) { SetTextBoxValue(txtZoneA_X, walkA.X); SetTextBoxValue(txtZoneA_Y, walkA.Y); }
+            if (walkB != null) { SetTextBoxValue(txtZoneB_X, walkB.X); SetTextBoxValue(txtZoneB_Y, walkB.Y); }
+            if (walkDefault != null) { SetTextBoxValue(txtZoneDefault_X, walkDefault.X); SetTextBoxValue(txtZoneDefault_Y, walkDefault.Y); }
         }
 
         private void btnSave_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtDisplayName.Text))
+            string name = HandlerBuilderPlaceholders.GetEffectiveText(txtDisplayName);
+            if (string.IsNullOrWhiteSpace(name))
             {
                 MessageBox.Show("Enter a display name for this handler.");
                 return;
@@ -242,6 +251,7 @@ namespace Grimoire.UI
             try
             {
                 HandlerScriptDefinition definition = BuildDefinition();
+                definition.DisplayName = name;
                 CustomHandlerRegistry.Save(definition);
                 LastSavedDisplayName = definition.DisplayName;
                 RefreshHandlerList();
@@ -292,25 +302,102 @@ namespace Grimoire.UI
             if (!(lstRules.SelectedItem is HandlerScriptRule rule))
                 return;
 
-            txtRuleZone.Text = rule.ZoneSet ?? string.Empty;
-            txtRuleMessage.Text = rule.MessageContains ?? string.Empty;
+            SetTextBoxValue(txtRuleZone, rule.ZoneSet ?? string.Empty);
+            SetTextBoxValue(txtRuleMessage, rule.MessageContains ?? string.Empty);
             HandlerScriptAction first = rule.Actions?.FirstOrDefault();
             if (first == null)
                 return;
 
             cmbActionType.SelectedItem = first.Type.ToString();
-            txtActionX.Text = first.X ?? string.Empty;
-            txtActionY.Text = first.Y ?? string.Empty;
-            txtActionSkill.Text = first.SkillIndex ?? string.Empty;
+            SetTextBoxValue(txtActionX, first.X ?? string.Empty);
+            SetTextBoxValue(txtActionY, first.Y ?? string.Empty);
+            SetTextBoxValue(txtActionSkill, first.SkillIndex ?? string.Empty);
             numActionDelay.Value = Math.Max(0, Math.Min((int)numActionDelay.Maximum, first.DelayMs));
         }
 
-        private void HandlerBuilderForm_FormClosing(object sender, FormClosingEventArgs e)
+        private static class HandlerBuilderPlaceholders
         {
-            if (e.CloseReason == CloseReason.UserClosing)
+            private static readonly Color PlaceholderColor = Color.FromArgb(140, 140, 150);
+            private static readonly Color NormalColor = Color.Gainsboro;
+
+            public static readonly IReadOnlyDictionary<string, string> Defaults = new Dictionary<string, string>
             {
-                e.Cancel = true;
-                Hide();
+                { "txtDisplayName", "Handler name (dropdown label)" },
+                { "txtZoneA_X", "Zone A X" },
+                { "txtZoneA_Y", "Zone A Y" },
+                { "txtZoneB_X", "Zone B X" },
+                { "txtZoneB_Y", "Zone B Y" },
+                { "txtZoneDefault_X", "Default X" },
+                { "txtZoneDefault_Y", "Default Y" },
+                { "txtRuleZone", "A, B, or default" },
+                { "txtRuleMessage", "truth, listen, ..." },
+                { "txtConditionAura", "Aura name" },
+                { "txtConditionValue", "Map or cell" },
+                { "txtActionX", "Walk X" },
+                { "txtActionY", "Walk Y" },
+                { "txtActionSkill", "Skill 1-5" }
+            };
+
+            public static void ApplyAll(Control root)
+            {
+                foreach (Control control in root.Controls)
+                {
+                    if (control is TextBox textBox && Defaults.TryGetValue(textBox.Name, out string placeholder))
+                        Wire(textBox, placeholder);
+                    else if (control.HasChildren)
+                        ApplyAll(control);
+                }
+            }
+
+            public static void Wire(TextBox textBox, string placeholder)
+            {
+                if (textBox == null || string.IsNullOrEmpty(placeholder))
+                    return;
+
+                SetPlaceholder(textBox, placeholder);
+
+                textBox.Enter += (s, e) =>
+                {
+                    if (IsPlaceholder(textBox))
+                        textBox.Clear();
+                    textBox.ForeColor = NormalColor;
+                };
+
+                textBox.Leave += (s, e) =>
+                {
+                    if (string.IsNullOrWhiteSpace(textBox.Text))
+                        SetPlaceholder(textBox, placeholder);
+                };
+            }
+
+            public static void SetPlaceholder(TextBox textBox, string placeholder)
+            {
+                textBox.Text = placeholder;
+                textBox.ForeColor = PlaceholderColor;
+            }
+
+            public static bool IsPlaceholder(TextBox textBox)
+            {
+                return Defaults.TryGetValue(textBox.Name, out string placeholder) &&
+                       textBox.Text == placeholder;
+            }
+
+            public static string GetEffectiveText(TextBox textBox)
+            {
+                if (textBox == null || IsPlaceholder(textBox))
+                    return string.Empty;
+                return textBox.Text.Trim();
+            }
+
+            public static void ClearField(TextBox textBox)
+            {
+                if (textBox == null)
+                    return;
+
+                if (Defaults.TryGetValue(textBox.Name, out string placeholder))
+                    SetPlaceholder(textBox, placeholder);
+                else
+                    textBox.Clear();
             }
         }
     }

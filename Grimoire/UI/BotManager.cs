@@ -167,6 +167,8 @@ namespace Grimoire.UI
             _builtInSpecialHandlerCount = cmbSpecials.Items.Count;
             ReloadCustomSpecialHandlers();
 
+            handlerBuilderPanel.HandlersSaved += OnCustomHandlersSaved;
+
             this.mainTabControl.SelectedIndex = 9; //Select bot tabs
             //botPacketSpammer = new PacketSpammer();
         }
@@ -3516,23 +3518,18 @@ namespace Grimoire.UI
                 cmbSpecials.Items.Add(name);
         }
 
-        private void btnHandlerBuilder_Click(object sender, EventArgs e)
+        private void OnCustomHandlersSaved(object sender, EventArgs e)
         {
-            HandlerBuilderForm form = new HandlerBuilderForm();
-            form.HandlersSaved += (s, ev) =>
-            {
-                ReloadCustomSpecialHandlers();
-                if (!string.IsNullOrEmpty(form.LastSavedDisplayName))
-                {
-                    int index = cmbSpecials.FindStringExact(form.LastSavedDisplayName);
-                    if (index >= 0)
-                        cmbSpecials.SelectedIndex = index;
-                }
-            };
-            form.Show();
+            ReloadCustomSpecialHandlers();
+            if (handlerBuilderPanel == null || string.IsNullOrEmpty(handlerBuilderPanel.LastSavedDisplayName))
+                return;
+
+            int index = cmbSpecials.FindStringExact(handlerBuilderPanel.LastSavedDisplayName);
+            if (index >= 0)
+                cmbSpecials.SelectedIndex = index;
         }
 
-        // These handlers are wired to buttons in the Misc 2 "Special handlers" groupbox.
+        // These handlers are wired to buttons in the Handlers tab "Active packet handler" groupbox.
         // They insert script commands so the actions become part of the bot script.
         private void btnSpecialStart_Click(object sender, EventArgs e)
         {

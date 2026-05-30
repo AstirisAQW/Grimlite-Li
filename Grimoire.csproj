@@ -222,11 +222,11 @@
     <Compile Include="Grimoire\Tools\LowLevelKeyboardHook.cs" />
     <Compile Include="Grimoire\Tools\Maid\MaidConfig.cs" />
     <Compile Include="Grimoire\Tools\Maid\MessageBoxEx.cs" />
-    <Compile Include="Grimoire\UI\HandlerBuilderForm.cs">
-      <SubType>Form</SubType>
+    <Compile Include="Grimoire\UI\HandlerBuilderPanel.cs">
+      <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Grimoire\UI\HandlerBuilderForm.Designer.cs">
-      <DependentUpon>HandlerBuilderForm.cs</DependentUpon>
+    <Compile Include="Grimoire\UI\HandlerBuilderPanel.Designer.cs">
+      <DependentUpon>HandlerBuilderPanel.cs</DependentUpon>
     </Compile>
     <Compile Include="Grimoire\UI\DropUi.cs">
       <SubType>Form</SubType>

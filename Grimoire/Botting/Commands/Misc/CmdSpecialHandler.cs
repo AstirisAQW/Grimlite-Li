@@ -5,7 +5,7 @@ namespace Grimoire.Botting.Commands.Misc
 {
     /// <summary>
     /// Scriptable command to control the auto-zone "Special handlers" feature
-    /// from the bot script (Misc 2 tab).
+    /// from the bot script (Handlers tab).
     /// </summary>
     public class CmdSpecialHandler : IBotCommand
     {
