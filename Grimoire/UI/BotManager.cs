@@ -158,10 +158,14 @@ namespace Grimoire.UI
         private DarkTextBox txtSavedDesc;
         // public PacketSpammer botPacketSpammer;
 
+        private int _builtInSpecialHandlerCount;
+
         private BotManager()
         {
             InitializeComponent();
             cbSafeType.SelectedIndex = 0;
+            _builtInSpecialHandlerCount = cmbSpecials.Items.Count;
+            ReloadCustomSpecialHandlers();
 
             this.mainTabControl.SelectedIndex = 9; //Select bot tabs
             //botPacketSpammer = new PacketSpammer();
@@ -3400,7 +3404,10 @@ namespace Grimoire.UI
                     SpecialJsonHandler = new HandlerUltraSpeakerAP();
                     break;
                 default:
-                    SpecialJsonHandler = null;
+                    if (CustomHandlerRegistry.TryCreateHandler(cmbSpecials.SelectedItem.ToString(), out IJsonMessageHandler customHandler))
+                        SpecialJsonHandler = customHandler;
+                    else
+                        SpecialJsonHandler = null;
                     break;
             }
 
@@ -3497,6 +3504,32 @@ namespace Grimoire.UI
         {
             // If you want automatic switching on dropdown change, uncomment the next line.
             //UpdateSpecialHandler();
+        }
+
+        public void ReloadCustomSpecialHandlers()
+        {
+            while (cmbSpecials.Items.Count > _builtInSpecialHandlerCount)
+                cmbSpecials.Items.RemoveAt(cmbSpecials.Items.Count - 1);
+
+            CustomHandlerRegistry.ReloadFromDisk();
+            foreach (string name in CustomHandlerRegistry.CustomDisplayNames)
+                cmbSpecials.Items.Add(name);
+        }
+
+        private void btnHandlerBuilder_Click(object sender, EventArgs e)
+        {
+            HandlerBuilderForm form = new HandlerBuilderForm();
+            form.HandlersSaved += (s, ev) =>
+            {
+                ReloadCustomSpecialHandlers();
+                if (!string.IsNullOrEmpty(form.LastSavedDisplayName))
+                {
+                    int index = cmbSpecials.FindStringExact(form.LastSavedDisplayName);
+                    if (index >= 0)
+                        cmbSpecials.SelectedIndex = index;
+                }
+            };
+            form.Show();
         }
 
         // These handlers are wired to buttons in the Misc 2 "Special handlers" groupbox.

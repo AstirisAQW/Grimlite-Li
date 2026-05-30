@@ -3402,6 +3402,8 @@ namespace Grimoire.UI
             // 
             // darkGroupBox21
             // 
+            this.btnHandlerBuilder = new DarkUI.Controls.DarkButton();
+            this.darkGroupBox21.Controls.Add(this.btnHandlerBuilder);
             this.darkGroupBox21.Controls.Add(this.btnSpecialSwitch);
             this.darkGroupBox21.Controls.Add(this.btnSpecialStop);
             this.darkGroupBox21.Controls.Add(this.btnSpecialStart);
@@ -3409,10 +3411,22 @@ namespace Grimoire.UI
             this.darkGroupBox21.Controls.Add(this.cmbSpecials);
             this.darkGroupBox21.Location = new System.Drawing.Point(6, 118);
             this.darkGroupBox21.Name = "darkGroupBox21";
-            this.darkGroupBox21.Size = new System.Drawing.Size(234, 65);
+            this.darkGroupBox21.Size = new System.Drawing.Size(234, 90);
             this.darkGroupBox21.TabIndex = 171;
             this.darkGroupBox21.TabStop = false;
             this.darkGroupBox21.Text = "Special handlers";
+            // 
+            // btnSpecialSwitch
+            // 
+            // btnHandlerBuilder
+            // 
+            this.btnHandlerBuilder.Checked = false;
+            this.btnHandlerBuilder.Location = new System.Drawing.Point(27, 64);
+            this.btnHandlerBuilder.Name = "btnHandlerBuilder";
+            this.btnHandlerBuilder.Size = new System.Drawing.Size(200, 20);
+            this.btnHandlerBuilder.TabIndex = 177;
+            this.btnHandlerBuilder.Text = "Handler Builder...";
+            this.btnHandlerBuilder.Click += new System.EventHandler(this.btnHandlerBuilder_Click);
             // 
             // btnSpecialSwitch
             // 
@@ -5623,6 +5637,7 @@ namespace Grimoire.UI
 		private DarkNumericUpDown numSkillCmd;
 		private DarkButton btnReloadMap;
 		private DarkComboBox cmbSpecials;
+        private DarkUI.Controls.DarkButton btnHandlerBuilder;
 		private DarkCheckBox chkSpecial;
 		private DarkGroupBox darkGroupBox19;
 		private DarkGroupBox darkGroupBox17;
