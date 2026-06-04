@@ -19,16 +19,96 @@ namespace Grimoire.UI
         {
             InitializeComponent();
             HandlerBuilderPlaceholders.ApplyAll(this);
+            InitializeComboBoxes();
+            SetupToolTips();
+            RefreshHandlerList();
+        }
 
-            cmbPacketCommand.Items.AddRange(new object[] { "event", "ct" });
+        private void InitializeComboBoxes()
+        {
+            cmbPacketCommand.Items.Clear();
+            cmbPacketCommand.Items.Add(new LabeledValue<string>("event", "event — boss zone (A / B / safe spot)"));
+            cmbPacketCommand.Items.Add(new LabeledValue<string>("ct", "ct — boss combat line (Truth, Listen, …)"));
             cmbPacketCommand.SelectedIndex = 0;
-            cmbTriggerType.Items.AddRange(Enum.GetNames(typeof(HandlerTriggerType)));
+
+            cmbTriggerType.Items.Clear();
+            cmbTriggerType.Items.Add(new LabeledValue<HandlerTriggerType>(
+                HandlerTriggerType.ZoneEvent, "Zone change → walk to map X,Y"));
+            cmbTriggerType.Items.Add(new LabeledValue<HandlerTriggerType>(
+                HandlerTriggerType.AnimationMessage, "Boss message → skill or walk"));
             cmbTriggerType.SelectedIndex = 0;
+
+            cmbActionType.Items.Clear();
             cmbActionType.Items.AddRange(Enum.GetNames(typeof(HandlerScriptActionType)));
             cmbActionType.SelectedIndex = 0;
+
+            cmbConditionType.Items.Clear();
             cmbConditionType.Items.AddRange(Enum.GetNames(typeof(HandlerScriptConditionType)));
             cmbConditionType.SelectedIndex = 0;
-            RefreshHandlerList();
+        }
+
+        private void SetupToolTips()
+        {
+            toolTips.SetToolTip(cmbPacketCommand,
+                "event = boss sends zoneSet (A, B, or other) — used for Ultradage-style mechanics.\r\n" +
+                "ct = combat/animation packet with boss chat (Truth, Listen, etc.) — used for Speaker-style mechanics.");
+            toolTips.SetToolTip(cmbTriggerType,
+                "Zone change reads zoneSet from an event packet.\r\n" +
+                "Boss message reads text from a ct packet (anims msg).");
+            toolTips.SetToolTip(numHandlerDelay, "Wait this many ms after the packet before running actions.");
+            toolTips.SetToolTip(txtRuleZone,
+                "Only for event packets. Match zoneSet: A, B, or default (anything else). Leave empty if using boss message only.");
+            toolTips.SetToolTip(txtRuleMessage,
+                "Only for ct packets. Part of the boss line, e.g. truth or listen (not case sensitive).");
+            toolTips.SetToolTip(txtConditionAura,
+                "Optional. Exact aura name on your character, e.g. Positive Charge (Queen Iona).");
+            toolTips.SetToolTip(txtConditionValue,
+                "For MapEquals / CellEquals: map name or cell name (e.g. Boss).");
+            toolTips.SetToolTip(txtActionSkill, "Skill bar slot 1–5 to press when this rule matches.");
+            toolTips.SetToolTip(btnQuickSkillRule,
+                "Adds a rule: when boss line contains your text → UseSkill. Sets packet to ct automatically.");
+            toolTips.SetToolTip(btnQuickZoneApply,
+                "Builds walk rules for zone A, B, and a default fallback. Sets packet to event.");
+        }
+
+        private string GetSelectedPacketCommand()
+        {
+            if (cmbPacketCommand.SelectedItem is LabeledValue<string> item)
+                return item.Value;
+            return cmbPacketCommand.SelectedItem?.ToString() ?? "event";
+        }
+
+        private void SelectPacketCommand(string command)
+        {
+            for (int i = 0; i < cmbPacketCommand.Items.Count; i++)
+            {
+                if (cmbPacketCommand.Items[i] is LabeledValue<string> lv &&
+                    lv.Value.Equals(command, StringComparison.OrdinalIgnoreCase))
+                {
+                    cmbPacketCommand.SelectedIndex = i;
+                    return;
+                }
+            }
+        }
+
+        private HandlerTriggerType GetSelectedTriggerType()
+        {
+            if (cmbTriggerType.SelectedItem is LabeledValue<HandlerTriggerType> item)
+                return item.Value;
+            Enum.TryParse(cmbTriggerType.SelectedItem?.ToString(), out HandlerTriggerType trigger);
+            return trigger;
+        }
+
+        private void SelectTriggerType(HandlerTriggerType trigger)
+        {
+            for (int i = 0; i < cmbTriggerType.Items.Count; i++)
+            {
+                if (cmbTriggerType.Items[i] is LabeledValue<HandlerTriggerType> lv && lv.Value == trigger)
+                {
+                    cmbTriggerType.SelectedIndex = i;
+                    return;
+                }
+            }
         }
 
         private void RefreshHandlerList()
@@ -59,8 +139,8 @@ namespace Grimoire.UI
 
         private void btnQuickZoneApply_Click(object sender, EventArgs e)
         {
-            cmbTriggerType.SelectedItem = nameof(HandlerTriggerType.ZoneEvent);
-            cmbPacketCommand.SelectedItem = "event";
+            SelectTriggerType(HandlerTriggerType.ZoneEvent);
+            SelectPacketCommand("event");
             lstRules.Items.Clear();
 
             AddZoneWalkRule("A", HandlerBuilderPlaceholders.GetEffectiveText(txtZoneA_X), HandlerBuilderPlaceholders.GetEffectiveText(txtZoneA_Y));
@@ -78,6 +158,34 @@ namespace Grimoire.UI
                     Y = defY
                 });
             }
+        }
+
+        private void btnQuickSkillRule_Click(object sender, EventArgs e)
+        {
+            string message = HandlerBuilderPlaceholders.GetEffectiveText(txtQuickSkillMsg);
+            string skill = HandlerBuilderPlaceholders.GetEffectiveText(txtQuickSkillNum);
+            if (string.IsNullOrWhiteSpace(message) || string.IsNullOrWhiteSpace(skill))
+            {
+                MessageBox.Show("Enter boss line text (e.g. truth) and a skill number (1–5).");
+                return;
+            }
+
+            SelectPacketCommand("ct");
+            SelectTriggerType(HandlerTriggerType.AnimationMessage);
+
+            var rule = new HandlerScriptRule
+            {
+                MessageContains = message,
+                Actions = new List<HandlerScriptAction>
+                {
+                    new HandlerScriptAction
+                    {
+                        Type = HandlerScriptActionType.UseSkill,
+                        SkillIndex = skill
+                    }
+                }
+            };
+            lstRules.Items.Add(rule);
         }
 
         private void AddZoneWalkRule(string zone, string x, string y)
@@ -177,13 +285,11 @@ namespace Grimoire.UI
 
         private HandlerScriptDefinition BuildDefinition()
         {
-            Enum.TryParse(cmbTriggerType.SelectedItem?.ToString(), out HandlerTriggerType trigger);
-
             return new HandlerScriptDefinition
             {
                 DisplayName = HandlerBuilderPlaceholders.GetEffectiveText(txtDisplayName),
-                PacketCommand = cmbPacketCommand.SelectedItem?.ToString() ?? "event",
-                TriggerType = trigger,
+                PacketCommand = GetSelectedPacketCommand(),
+                TriggerType = GetSelectedTriggerType(),
                 DelayMs = (int)numHandlerDelay.Value,
                 Rules = lstRules.Items.Cast<HandlerScriptRule>().ToList(),
                 DefaultActions = lstDefaultActions.Items.Cast<HandlerScriptAction>().ToList()
@@ -208,8 +314,8 @@ namespace Grimoire.UI
                 return;
 
             SetTextBoxValue(txtDisplayName, definition.DisplayName);
-            cmbPacketCommand.SelectedItem = definition.PacketCommand ?? "event";
-            cmbTriggerType.SelectedItem = definition.TriggerType.ToString();
+            SelectPacketCommand(definition.PacketCommand ?? "event");
+            SelectTriggerType(definition.TriggerType);
             numHandlerDelay.Value = Math.Max(0, Math.Min((int)numHandlerDelay.Maximum, definition.DelayMs));
 
             lstRules.Items.Clear();
@@ -315,6 +421,20 @@ namespace Grimoire.UI
             numActionDelay.Value = Math.Max(0, Math.Min((int)numActionDelay.Maximum, first.DelayMs));
         }
 
+        private sealed class LabeledValue<T>
+        {
+            public LabeledValue(T value, string label)
+            {
+                Value = value;
+                Label = label;
+            }
+
+            public T Value { get; }
+            public string Label { get; }
+
+            public override string ToString() => Label;
+        }
+
         private static class HandlerBuilderPlaceholders
         {
             private static readonly Color PlaceholderColor = Color.FromArgb(140, 140, 150);
@@ -322,20 +442,22 @@ namespace Grimoire.UI
 
             public static readonly IReadOnlyDictionary<string, string> Defaults = new Dictionary<string, string>
             {
-                { "txtDisplayName", "Handler name (dropdown label)" },
-                { "txtZoneA_X", "Zone A X" },
-                { "txtZoneA_Y", "Zone A Y" },
-                { "txtZoneB_X", "Zone B X" },
-                { "txtZoneB_Y", "Zone B Y" },
-                { "txtZoneDefault_X", "Default X" },
-                { "txtZoneDefault_Y", "Default Y" },
+                { "txtDisplayName", "My Ultra Zone Handler" },
+                { "txtZoneA_X", "X" },
+                { "txtZoneA_Y", "Y" },
+                { "txtZoneB_X", "X" },
+                { "txtZoneB_Y", "Y" },
+                { "txtZoneDefault_X", "X" },
+                { "txtZoneDefault_Y", "Y" },
                 { "txtRuleZone", "A, B, or default" },
-                { "txtRuleMessage", "truth, listen, ..." },
-                { "txtConditionAura", "Aura name" },
-                { "txtConditionValue", "Map or cell" },
-                { "txtActionX", "Walk X" },
-                { "txtActionY", "Walk Y" },
-                { "txtActionSkill", "Skill 1-5" }
+                { "txtRuleMessage", "truth" },
+                { "txtConditionAura", "Positive Charge" },
+                { "txtConditionValue", "ultraspeaker" },
+                { "txtActionX", "X" },
+                { "txtActionY", "Y" },
+                { "txtActionSkill", "5" },
+                { "txtQuickSkillMsg", "truth" },
+                { "txtQuickSkillNum", "5" }
             };
 
             public static void ApplyAll(Control root)

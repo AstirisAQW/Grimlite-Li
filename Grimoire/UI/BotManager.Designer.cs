@@ -196,6 +196,7 @@ namespace Grimoire.UI
 		private TabPage tabMisc2;
 		private TabPage tabHandlers;
 		private HandlerBuilderPanel handlerBuilderPanel;
+		private DarkUI.Controls.DarkLabel lblHandlerActivateHelp;
 		private DarkGroupBox groupBox1;
 		private DarkButton btnSpecialStart;
 		private DarkButton btnSpecialStop;
@@ -505,6 +506,7 @@ namespace Grimoire.UI
             this.tabMisc2 = new System.Windows.Forms.TabPage();
             this.tabHandlers = new System.Windows.Forms.TabPage();
             this.handlerBuilderPanel = new Grimoire.UI.HandlerBuilderPanel();
+            this.lblHandlerActivateHelp = new DarkUI.Controls.DarkLabel();
             this.darkGroupBox21 = new DarkUI.Controls.DarkGroupBox();
             this.btnSpecialSwitch = new DarkUI.Controls.DarkButton();
             this.btnSpecialStop = new DarkUI.Controls.DarkButton();
@@ -3423,13 +3425,14 @@ namespace Grimoire.UI
             // handlerBuilderPanel
             // 
             this.handlerBuilderPanel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.handlerBuilderPanel.Location = new System.Drawing.Point(3, 75);
+            this.handlerBuilderPanel.Location = new System.Drawing.Point(3, 91);
             this.handlerBuilderPanel.Name = "handlerBuilderPanel";
             this.handlerBuilderPanel.Size = new System.Drawing.Size(538, 220);
             this.handlerBuilderPanel.TabIndex = 179;
             // 
             // darkGroupBox21
             // 
+            this.darkGroupBox21.Controls.Add(this.lblHandlerActivateHelp);
             this.darkGroupBox21.Controls.Add(this.btnSpecialSwitch);
             this.darkGroupBox21.Controls.Add(this.btnSpecialStop);
             this.darkGroupBox21.Controls.Add(this.btnSpecialStart);
@@ -3438,15 +3441,24 @@ namespace Grimoire.UI
             this.darkGroupBox21.Dock = System.Windows.Forms.DockStyle.Top;
             this.darkGroupBox21.Location = new System.Drawing.Point(3, 3);
             this.darkGroupBox21.Name = "darkGroupBox21";
-            this.darkGroupBox21.Size = new System.Drawing.Size(538, 72);
+            this.darkGroupBox21.Size = new System.Drawing.Size(538, 88);
             this.darkGroupBox21.TabIndex = 171;
             this.darkGroupBox21.TabStop = false;
-            this.darkGroupBox21.Text = "Active packet handler";
+            this.darkGroupBox21.Text = "Use a handler while bot runs";
+            // 
+            // lblHandlerActivateHelp
+            // 
+            this.lblHandlerActivateHelp.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(160)))), ((int)(((byte)(160)))), ((int)(((byte)(170)))));
+            this.lblHandlerActivateHelp.Location = new System.Drawing.Point(27, 32);
+            this.lblHandlerActivateHelp.Name = "lblHandlerActivateHelp";
+            this.lblHandlerActivateHelp.Size = new System.Drawing.Size(500, 14);
+            this.lblHandlerActivateHelp.TabIndex = 178;
+            this.lblHandlerActivateHelp.Text = "Check to enable. Built-in ultraboss handlers + your saved custom handlers appear in the list.";
             // 
             // btnSpecialSwitch
             // 
             this.btnSpecialSwitch.Checked = false;
-            this.btnSpecialSwitch.Location = new System.Drawing.Point(167, 40);
+            this.btnSpecialSwitch.Location = new System.Drawing.Point(167, 56);
             this.btnSpecialSwitch.Name = "btnSpecialSwitch";
             this.btnSpecialSwitch.Size = new System.Drawing.Size(60, 20);
             this.btnSpecialSwitch.TabIndex = 176;
@@ -3456,7 +3468,7 @@ namespace Grimoire.UI
             // btnSpecialStop
             // 
             this.btnSpecialStop.Checked = false;
-            this.btnSpecialStop.Location = new System.Drawing.Point(97, 40);
+            this.btnSpecialStop.Location = new System.Drawing.Point(97, 56);
             this.btnSpecialStop.Name = "btnSpecialStop";
             this.btnSpecialStop.Size = new System.Drawing.Size(60, 20);
             this.btnSpecialStop.TabIndex = 175;
@@ -3466,7 +3478,7 @@ namespace Grimoire.UI
             // btnSpecialStart
             // 
             this.btnSpecialStart.Checked = false;
-            this.btnSpecialStart.Location = new System.Drawing.Point(27, 40);
+            this.btnSpecialStart.Location = new System.Drawing.Point(27, 56);
             this.btnSpecialStart.Name = "btnSpecialStart";
             this.btnSpecialStart.Size = new System.Drawing.Size(60, 20);
             this.btnSpecialStart.TabIndex = 174;
